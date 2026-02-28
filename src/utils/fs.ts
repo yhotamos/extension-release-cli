@@ -7,7 +7,7 @@ export function makeDirectoryIfNotExists(dirPath: string): void {
       fs.mkdirSync(dirPath, { recursive: true });
       console.log(`${kleur.green('✔')} created directory '${dirPath}'`);
     } catch (err) {
-      throw new Error(`failed to create directory '${err instanceof Error ? err.message : String(err)}'`);
+      throw new Error(`failed to create directory '${dirPath}': ${err instanceof Error ? err.message : String(err)}`);
     }
   }
 }
@@ -18,7 +18,7 @@ export function deleteFileIfExists(filePath: string): void {
       fs.unlinkSync(filePath);
       console.log(`${kleur.green('✔')} deleted file '${filePath}'`);
     } catch (err) {
-      throw new Error(`failed to delete file '${err instanceof Error ? err.message : String(err)}'`);
+      throw new Error(`failed to delete file '${filePath}': ${err instanceof Error ? err.message : String(err)}`);
     }
   }
 }
