@@ -154,13 +154,16 @@ function createZipArchive(source: string, zipFilePath: string, outputStream?: Wr
 
     archive.glob('**/*', {
       cwd: source,
-      dot: false,
+      dot: true,
       ignore: [
         '**/.DS_Store',
         '**/__MACOSX/**',
         '**/.git/**',
         '**/.vscode/**',
-        '**/.github/**'
+        '**/.github/**',
+        '**/node_modules/**',
+        '**/dist/**',
+        '**/releases/**'
       ]
     });
 
