@@ -21,7 +21,7 @@ export function packCommand(program: Command) {
     .command('pack')
     .description('pack the extension source directory into a zip archive')
     .argument('<source>', 'extension source directory with manifest.json to pack (e.g., dist/, my-extension/)')
-    .option('-n, --name <name>', 'base name to use for the zip file. ')
+    .option('-n, --name <name>', 'base name to use for the zip file')
     .option('-r, --releases-dir <dir>', 'directory to save the zip file (default: releases/)')
     .option('-f, --force', 'overwrite existing zip file if it exists')
     .option('--dry-run', 'perform a trial run with no changes made')
@@ -62,13 +62,13 @@ export function packCommand(program: Command) {
 
         if (options.dryRun) {
           const passthrough = new PassThrough();
-          let size = 0
-          passthrough.on('data', (chunk: Buffer) => { size += chunk.length })
-          await createZipArchive(source, zipFilePath, passthrough)
+          let size = 0;
+          passthrough.on('data', (chunk: Buffer) => { size += chunk.length; });
+          await createZipArchive(source, zipFilePath, passthrough);
           console.log(`${kleur.green('✔')} dry run completed successfully!`);
-          console.log(`  would pack: ${zipFilePath}`)
-          console.log(`  estimated size: ${formatSize(size)}`)
-          console.log(`\n  if the zip file name is not as expected, consider using the --name option to specify a custom base name for the zip file.`)
+          console.log(`  would pack: ${zipFilePath}`);
+          console.log(`  estimated size: ${formatSize(size)}`);
+          console.log(`\n  if the zip file name is not as expected, consider using the --name option to specify a custom base name for the zip file.`);
           return;
         }
 
@@ -172,8 +172,8 @@ function createZipArchive(source: string, zipFilePath: string, outputStream?: Wr
           console.log(`  packed: ${zipFilePath}`);
           console.log(`  size: ${formatSize(size)}`);
         }
-        cleanup()
-        resolve(size)
+        cleanup();
+        resolve(size);
       } catch (err) { cleanup(); reject(err) }
     }
 
@@ -204,7 +204,6 @@ function createZipArchive(source: string, zipFilePath: string, outputStream?: Wr
     archive.on('warning', onWarning)
 
     archive.pipe(output);
-    archive.directory(source, false);
     void archive.finalize();
   })
 }
