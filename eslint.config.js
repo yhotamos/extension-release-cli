@@ -5,7 +5,6 @@ export default [
 
   {
     files: ['**/*.ts'],
-    ignores: ['**/*.test.ts', '**/*.spec.ts'],
     languageOptions: {
       parserOptions: {
         project: './tsconfig.json'
