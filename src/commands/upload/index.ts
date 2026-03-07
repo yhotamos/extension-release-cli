@@ -44,7 +44,7 @@ export function uploadCommand(program: Command) {
 }
 
 /**
- * uploads the extension zip file to the Chrome Web Store using the V2 API.
+ * Uploads the extension zip file to the Chrome Web Store using the V2 API.
  */
 async function uploadChromeWebStoreV2(
   zipFilePath: string,
@@ -73,10 +73,19 @@ async function uploadChromeWebStoreV2(
     }),
   });
   const tokenJson = await tokenResponse.json();
-  const access_token = tokenJson.access_token as string | undefined;
-  if (!access_token) {
-    throw new Error('failed to obtain access token');
+
+  if (!tokenResponse.ok) {
+    throw new Error(
+      `failed to obtain access token (HTTP ${tokenResponse.status} ${tokenResponse.statusText})`
+    );
   }
+
+  const accessToken = tokenJson.access_token as string | undefined;
+
+  if (!accessToken) {
+    throw new Error(`failed to obtain access token (missing access_token in response)`);
+  }
+
   console.log(`${kleur.green('✔')} obtained access token`);
 
   // uploading the package (V2 media.upload)
@@ -88,19 +97,25 @@ async function uploadChromeWebStoreV2(
   const uploadResponse = await fetch(uploadUrl, {
     method: 'POST',
     headers: {
-      Authorization: `Bearer ${access_token}`,
+      Authorization: `Bearer ${accessToken}`,
       'Content-Type': 'application/zip',
     },
     body: zipBuffer,
   });
 
-  const uploadResult = await uploadResponse.json();
+  let uploadResult;
+
+  try {
+    uploadResult = await uploadResponse.json();
+  } catch {
+    throw new Error(`upload failed (HTTP ${uploadResponse.status} ${uploadResponse.statusText})`);
+  }
 
   // success check
   if (uploadResponse.ok && uploadResult && uploadResult.uploadState === 'SUCCEEDED') {
     console.log(`${kleur.green('✔')} upload succeeded!`);
-    console.log(`  extension_id: "${uploadResult.itemId}"`);
-    console.log(`  version: "${uploadResult.crxVersion}"`);
+    console.log(`  extension_id: ${uploadResult.itemId}`);
+    console.log(`  version: ${uploadResult.crxVersion}`);
     return;
   }
 
