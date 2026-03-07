@@ -15,7 +15,7 @@ type Store = {
   extensionId: string;
 }
 
-export interface UploadOptions extends APIClient, Store { }
+export interface UploadConfig extends APIClient, Store { }
 
 export function uploadCommand(program: Command) {
   program
@@ -48,14 +48,16 @@ export function uploadCommand(program: Command) {
  */
 async function uploadChromeWebStoreV2(
   zipFilePath: string,
-  options: UploadOptions = loadEnv()
+  config: UploadConfig = loadEnv()
 ): Promise<void> {
   const missing: string[] = [];
-  if (!options.clientId) missing.push('clientId');
-  if (!options.clientSecret) missing.push('clientSecret');
-  if (!options.refreshToken) missing.push('refreshToken');
-  if (!options.publisherId) missing.push('publisherId');
-  if (!options.extensionId) missing.push('extensionId');
+
+  if (!config.clientId) missing.push('clientId');
+  if (!config.clientSecret) missing.push('clientSecret');
+  if (!config.refreshToken) missing.push('refreshToken');
+  if (!config.publisherId) missing.push('publisherId');
+  if (!config.extensionId) missing.push('extensionId');
+
   if (missing.length > 0) {
     throw new Error(`missing configuration "${missing.join(', ')}"`);
   }
@@ -66,9 +68,9 @@ async function uploadChromeWebStoreV2(
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: new URLSearchParams({
-      client_id: options.clientId!,
-      client_secret: options.clientSecret!,
-      refresh_token: options.refreshToken!,
+      client_id: config.clientId!,
+      client_secret: config.clientSecret!,
+      refresh_token: config.refreshToken!,
       grant_type: 'refresh_token',
     }),
   });
@@ -92,7 +94,7 @@ async function uploadChromeWebStoreV2(
   console.log('  uploading the package...');
   const zipBuffer = fs.readFileSync(zipFilePath);
 
-  const uploadUrl = `https://chromewebstore.googleapis.com/upload/v2/publishers/${options.publisherId}/items/${options.extensionId}:upload`;
+  const uploadUrl = `https://chromewebstore.googleapis.com/upload/v2/publishers/${config.publisherId}/items/${config.extensionId}:upload`;
 
   const uploadResponse = await fetch(uploadUrl, {
     method: 'POST',
