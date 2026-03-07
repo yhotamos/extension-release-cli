@@ -3,4 +3,10 @@ node_modules
 dist
 releases
 *.zip
+ext-dist
+
 .env
+.env.local
+.env.keys
+.env.production
+.env.development
