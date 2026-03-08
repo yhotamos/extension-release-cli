@@ -17,9 +17,9 @@ export function publishCommand(program: Command) {
     .command('publish')
     .description('publish the extension to the marketplace')
     .option('-e, --env <path>', 'custom path to .env file (e.g., --env .env.production)')
-    .option('--publish-type <type>', 'publish type (default: PUBLISH_TYPE_DEFAULT)')
-    .option('--deploy-percentage <number>', 'percentage of users to deploy to (0-100, default: 100)', parseFloat)
-    .option('--skip-review', 'skip the review process')
+    .option('--publish-type <type>', 'publish type (DEFAULT_PUBLISH or STAGED_PUBLISH)', 'DEFAULT_PUBLISH')
+    .option('--deploy-percentage <number>', 'percentage of users to deploy to (0-100)', parseFloat)
+    .option('--skip-review', 'skip the review process', false)
     .action(async (options: CommandOptions) => {
       try {
         console.log(`--- publishing extension ---`);
