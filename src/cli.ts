@@ -2,6 +2,7 @@ import { Command } from 'commander'
 import { readFileSync } from 'fs'
 import { packCommand } from './commands/pack';
 import { uploadCommand } from './commands/upload';
+import { publishCommand } from './commands/publish';
 
 const pkgJson = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf-8"));
 const version = pkgJson.version;
@@ -21,8 +22,9 @@ program
 // Register commands
 // pack: create a zip archive of the extension source code, ready for upload or publish
 packCommand(program);
-// upload: upload the packed extension to the marketplace (requires API key)
+// upload: upload the packed extension to the marketplace
 uploadCommand(program);
-// publish: upload and publish the extension in one step (requires API key)
+// publish: publish the extension to the marketplace
+publishCommand(program);
 
 program.parse();

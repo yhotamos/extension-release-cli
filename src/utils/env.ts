@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import { cleanEnv, str } from "envalid";
 import { config } from "@dotenvx/dotenvx";
-import type { UploadConfig } from ".";
+import type { StoreConfig } from "../types";
 
 export function loadEnvConfig(path?: string): void {
   let paths: string[];
@@ -30,7 +30,7 @@ export function loadEnvConfig(path?: string): void {
   });
 }
 
-export function loadEnv(): UploadConfig {
+export function loadEnv(): StoreConfig {
   const env = cleanEnv(process.env, {
     CLIENT_ID: str(),
     CLIENT_SECRET: str(),
