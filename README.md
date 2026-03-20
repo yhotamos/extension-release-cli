@@ -74,13 +74,16 @@ exr release dist/ --env .env.production
 ## Typical Workflow
 
 ```bash
-# 1. Build your extension
+# 1. Create your .env file (first time only)
+# See the Setup section above for required variables
+
+# 2. Build your extension
 npm run build
 
-# 2. Release in one command
+# 3. Release in one command (.env is loaded automatically)
 exr release dist/
 
-# 3. Check the store status afterwards
+# 4. Check the store status afterwards
 exr status
 ```
 
