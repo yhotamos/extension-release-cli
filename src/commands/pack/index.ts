@@ -9,7 +9,7 @@ import kleur from "kleur";
 
 const RELEASES_DIR = 'releases';
 
-interface PackOptions {
+export type PackOptions = {
   name?: string;
   releasesDir?: string;
   force?: boolean;
@@ -27,64 +27,10 @@ export function packCommand(program: Command) {
     .option('--dry-run', 'perform a trial run with no changes made')
     .action(async (source: string, options: PackOptions = {}) => {
       try {
-        if (!fs.existsSync(source)) {
-          throw new Error(`source directory '${source}' does not exist`);
-        }
-
-        const manifestData = getManifestData(source);
-        const resolvedSource = path.resolve(source);
-        const resolvedReleasesDir = path.resolve(options.releasesDir ?? RELEASES_DIR);
-
-        if (resolvedSource === process.cwd()) {
-          throw new Error(
-            "refusing to pack the current working directory '.'. specify a subdirectory to pack (e.g. dist/)."
-          );
-        }
-
-        const { identifier, zipFileName } = resolvePackZipFileName(options, source);
-
-        // Ensure releases directory is not the same as or inside the source directory to prevent infinite recursion
-        const relative = path.relative(resolvedSource, resolvedReleasesDir);
-        const isInsideSource = relative === "" || (!relative.startsWith("..") && !path.isAbsolute(relative));
-
-        if (isInsideSource) {
-          throw new Error(
-            `releases directory '${resolvedReleasesDir}' must not be the same as or inside the source directory '${resolvedSource}'.`
-          );
-        }
-        const zipFilePath = path.join(resolvedReleasesDir, zipFileName);
-
-        console.log(`--- packing '${source}' into a zip archive ---`);
-        console.log(`  identifier: ${identifier}`);
-        console.log(`  extension name: ${manifestData.name}`);
-        console.log(`  version: ${manifestData.version}`);
-        console.log(`  source: ${source}\n`);
-
+        await packExtension(source, options);
         if (options.dryRun) {
-          const passthrough = new PassThrough();
-          let size = 0;
-          passthrough.on('data', (chunk: Buffer) => { size += chunk.length; });
-          await createZipArchive(source, zipFilePath, passthrough);
-          console.log(`${kleur.green('✔')} dry run completed successfully!`);
-          console.log(`  would pack: ${zipFilePath}`);
-          console.log(`  estimated size: ${formatSize(size)}`);
           console.log(`\n  if the zip file name is not as expected, consider using the --name option to specify a custom base name for the zip file.`);
-          return;
         }
-
-        makeDirectoryIfNotExists(resolvedReleasesDir);
-
-        if (options.force) {
-          deleteFileIfExists(zipFilePath);
-        } else if (fs.existsSync(zipFilePath)) {
-          console.warn(
-            `${kleur.yellow('⚠')} zip file already exists '${zipFilePath}'.\n ` +
-            ` use --force option to overwrite.`
-          );
-          return;
-        }
-
-        await createZipArchive(source, zipFilePath);
       } catch (error) {
         console.error(`error: ${error instanceof Error ? error.message : String(error)}\n`);
         process.exit(1);
@@ -92,12 +38,77 @@ export function packCommand(program: Command) {
     });
 }
 
+/**
+ * Packs the extension source directory into a zip archive.
+ * Returns the absolute path to the created zip file, or null if the operation was not performed.
+ */
+export async function packExtension(source: string, options: PackOptions = {}, header?: string): Promise<string | null> {
+  if (!fs.existsSync(source)) {
+    throw new Error(`source directory '${source}' does not exist`);
+  }
+
+  const resolvedSource = path.resolve(source);
+  const resolvedReleasesDir = path.resolve(options.releasesDir ?? RELEASES_DIR);
+  if (resolvedSource === process.cwd()) {
+    throw new Error(
+      "refusing to pack the current working directory '.'. specify a subdirectory to pack (e.g. dist/)."
+    );
+  }
+
+  const relative = path.relative(resolvedSource, resolvedReleasesDir);
+  const isInsideSource = relative === "" || (!relative.startsWith("..") && !path.isAbsolute(relative));
+  if (isInsideSource) {
+    throw new Error(
+      `releases directory '${resolvedReleasesDir}' must not be the same as or inside the source directory '${resolvedSource}'.`
+    );
+  }
+
+  const { identifier, zipFileName, manifestData } = resolvePackZipFileName(source, options);
+  const zipFilePath = path.join(resolvedReleasesDir, zipFileName);
+
+  console.log(header ?? `--- packing '${source}' into a zip archive ---`);
+  console.log(`  identifier: ${identifier}`);
+  console.log(`  extension name: ${manifestData.name}`);
+  console.log(`  version: ${manifestData.version}`);
+  console.log(`  source: ${source}\n`);
+
+  if (options.dryRun) {
+    const passthrough = new PassThrough();
+    let size = 0;
+    passthrough.on('data', (chunk: Buffer) => { size += chunk.length; });
+    await createZipArchive(source, zipFilePath, passthrough);
+    console.log(`${kleur.green('✔')} pack completed`);
+    console.log(`  would pack: ${zipFilePath}`);
+    console.log(`  estimated size: ${formatSize(size)}`);
+    return null;
+  }
+
+  makeDirectoryIfNotExists(resolvedReleasesDir);
+
+  if (options.force) {
+    deleteFileIfExists(zipFilePath);
+  } else if (fs.existsSync(zipFilePath)) {
+    console.warn(
+      `${kleur.yellow('⚠')} zip file already exists '${zipFilePath}'.\n ` +
+      ` use --force option to overwrite.`
+    );
+    return null;
+  }
+
+  const size = await createZipArchive(source, zipFilePath);
+  console.log(`${kleur.green('✔')} pack completed!`);
+  console.log(`  packed: ${zipFilePath}`);
+  console.log(`  size: ${formatSize(size)}`);
+  return zipFilePath;
+}
+
 type PackZipFileName = {
   identifier: string,
-  zipFileName: string
+  zipFileName: string,
+  manifestData: { name: string; version: string }
 };
 
-export function resolvePackZipFileName(options: PackOptions = {}, source: string): PackZipFileName {
+export function resolvePackZipFileName(source: string, options: PackOptions = {}): PackZipFileName {
   const projectName = path.basename(process.cwd());
   const manifestData = getManifestData(source);
   const extensionName = manifestData.name;
@@ -113,7 +124,8 @@ export function resolvePackZipFileName(options: PackOptions = {}, source: string
     }
     return {
       identifier: generateIdentifier(options.name, version),
-      zipFileName: generateZipFileName(options.name, version)
+      zipFileName: generateZipFileName(options.name, version),
+      manifestData
     };
   }
 
@@ -124,7 +136,8 @@ export function resolvePackZipFileName(options: PackOptions = {}, source: string
       if (typeof pkg.name === 'string') {
         return {
           identifier: generateIdentifier(pkg.name, version),
-          zipFileName: generateZipFileName(pkg.name, version)
+          zipFileName: generateZipFileName(pkg.name, version),
+          manifestData
         };
       }
     }
@@ -135,7 +148,8 @@ export function resolvePackZipFileName(options: PackOptions = {}, source: string
     if (sanitized && sanitized.length > 0) {
       return {
         identifier: generateIdentifier(sanitized, version),
-        zipFileName: generateZipFileName(sanitized, version)
+        zipFileName: generateZipFileName(sanitized, version),
+        manifestData
       };
     }
   }
@@ -143,7 +157,8 @@ export function resolvePackZipFileName(options: PackOptions = {}, source: string
   const sanitizedManifest = sanitizeName(String(extensionName || ''));
   return {
     identifier: generateIdentifier(sanitizedManifest, version),
-    zipFileName: generateZipFileName(sanitizedManifest, version)
+    zipFileName: generateZipFileName(sanitizedManifest, version),
+    manifestData
   };
 }
 
@@ -170,11 +185,6 @@ function createZipArchive(source: string, zipFilePath: string, outputStream?: Wr
     const onClose = () => {
       try {
         const size = archive.pointer();
-        if (!outputStream) {
-          console.log(`${kleur.green('✔')} created zip archive successfully!`);
-          console.log(`  packed: ${zipFilePath}`);
-          console.log(`  size: ${formatSize(size)}`);
-        }
         cleanup();
         resolve(size);
       } catch (err) { cleanup(); reject(err) }

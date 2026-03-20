@@ -42,7 +42,7 @@ export function uploadCommand(program: Command) {
     });
 }
 
-async function uploadChromeWebStoreV2(
+export async function uploadChromeWebStoreV2(
   zipFilePath: string,
   target: StoreTarget,
   accessToken: string
