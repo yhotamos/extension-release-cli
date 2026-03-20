@@ -3,6 +3,7 @@ import { readFileSync } from 'fs'
 import { packCommand } from './commands/pack';
 import { uploadCommand } from './commands/upload';
 import { publishCommand } from './commands/publish';
+import { releaseCommand } from './commands/release';
 
 const pkgJson = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf-8"));
 const version = pkgJson.version;
@@ -26,5 +27,7 @@ packCommand(program);
 uploadCommand(program);
 // publish: publish the extension to the marketplace
 publishCommand(program);
+// release: pack, upload, and publish the extension in one step
+releaseCommand(program);
 
 program.parse();

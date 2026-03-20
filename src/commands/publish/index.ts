@@ -5,7 +5,7 @@ import { getAccessToken } from "../../utils/oauth";
 import { parseStoreError } from "../../utils/chrome-webstore";
 import type { StoreTarget, PublishType, PublishResponse, PublishParams } from "../../types";
 
-type CommandOptions = {
+export type PublishOptions = {
   env?: string;
   publishType?: PublishType;
   deployPercentage?: number;
@@ -20,7 +20,7 @@ export function publishCommand(program: Command) {
     .option('--publish-type <type>', 'publish type (DEFAULT_PUBLISH or STAGED_PUBLISH)', 'DEFAULT_PUBLISH')
     .option('--deploy-percentage <number>', 'percentage of users to deploy to (0-100)', parseFloat)
     .option('--skip-review', 'skip the review process', false)
-    .action(async (options: CommandOptions) => {
+    .action(async (options: PublishOptions) => {
       try {
         console.log(`--- publishing extension ---`);
 
@@ -48,7 +48,7 @@ export function publishCommand(program: Command) {
     });
 }
 
-async function publishChromeWebStoreV2(
+export async function publishChromeWebStoreV2(
   target: StoreTarget,
   accessToken: string,
   params: PublishParams = {}
