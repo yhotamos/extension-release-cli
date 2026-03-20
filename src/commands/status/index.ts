@@ -7,29 +7,29 @@ import type { ItemState, StoreTarget, UploadState } from "../../types";
 export type StatusOptions = {
   env?: string;
   showFullPublicKey?: boolean;
-}
+};
 
 // Deployment information for a specific release channel
 type DistributionChannel = {
-  deployPercentage: number,
-  crxVersion: string
+  deployPercentage: number;
+  crxVersion: string;
 }
 
 // Details on the status of an item revision
 type ItemRevisionStatus = {
-  state: ItemState,
-  distributionChannels: DistributionChannel[]
+  state: ItemState;
+  distributionChannels: DistributionChannel[];
 }
 
 type StatusResponse = {
-  name: string,
-  itemId: string,
-  publicKey: string | undefined,
-  publishedItemRevisionStatus: ItemRevisionStatus | undefined,
-  submittedItemRevisionStatus: ItemRevisionStatus | undefined,
-  lastAsyncUploadState: UploadState | undefined,
-  takenDown: boolean,
-  warned: boolean
+  name: string;
+  itemId: string;
+  publicKey: string | undefined;
+  publishedItemRevisionStatus: ItemRevisionStatus | undefined;
+  submittedItemRevisionStatus: ItemRevisionStatus | undefined;
+  lastAsyncUploadState: UploadState | undefined;
+  takenDown: boolean;
+  warned: boolean;
 }
 
 export function statusCommand(program: Command) {
