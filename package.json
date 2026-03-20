@@ -1,6 +1,6 @@
 {
   "name": "extension-release-cli",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "CLI tool to build, package, and publish Chrome extensions to the Chrome Web Store.",
   "type": "module",
   "bin": {
