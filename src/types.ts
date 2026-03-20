@@ -38,7 +38,7 @@ export type PublishParams = {
   skipReview?: boolean;
 };
 
-type ItemState =
+export type ItemState =
   | "ITEM_STATE_UNSPECIFIED"
   | "PENDING_REVIEW"
   | "STAGED"
