@@ -1,5 +1,5 @@
 {
-  "name": "ext-release-cli",
+  "name": "extension-release-cli",
   "version": "0.1.0",
   "description": "CLI tool to build, package, and publish Chrome extensions to the Chrome Web Store.",
   "type": "module",
@@ -32,12 +32,12 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/yhotamos/ext-release-cli.git"
+    "url": "git+https://github.com/yhotta240/extension-release-cli.git"
   },
   "bugs": {
-    "url": "https://github.com/yhotamos/ext-release-cli/issues"
+    "url": "https://github.com/yhotta240/extension-release-cli/issues"
   },
-  "homepage": "https://github.com/yhotamos/ext-release-cli#readme",
+  "homepage": "https://github.com/yhotta240/extension-release-cli#readme",
   "dependencies": {
     "archiver": "^7.0.1",
     "commander": "^14.0.3",
