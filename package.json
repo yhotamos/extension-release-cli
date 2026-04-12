@@ -7,10 +7,10 @@
     "exr": "dist/cli.js"
   },
   "scripts": {
-    "lint": "eslint src",
-    "lint:fix": "eslint src --fix",
+    "check": "biome check src",
+    "check:fix": "biome check --write --unsafe src",
     "typecheck": "tsc --noEmit",
-    "build": "npm run lint && npm run typecheck && tsup",
+    "build": "npm run check && npm run typecheck && tsup",
     "build:dev": "tsup --sourcemap",
     "watch": "tsup --watch",
     "test": "vitest"
@@ -39,20 +39,19 @@
   },
   "homepage": "https://github.com/yhotamos/extension-release-cli#readme",
   "dependencies": {
+    "@dotenvx/dotenvx": "^1.53.0",
     "archiver": "^7.0.1",
     "commander": "^14.0.3",
     "envalid": "^8.1.1",
     "kleur": "^4.1.5",
-    "ora": "^9.3.0",
-    "@dotenvx/dotenvx": "^1.53.0"
+    "ora": "^9.3.0"
   },
   "devDependencies": {
+    "@biomejs/biome": "2.4.11",
     "@types/archiver": "^7.0.0",
     "@types/node": "^25.3.1",
-    "eslint": "^10.0.2",
     "tsup": "^8.5.1",
     "typescript": "^5.9.3",
-    "typescript-eslint": "^8.56.1",
     "vitest": "^4.0.18"
   }
 }
