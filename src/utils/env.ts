@@ -1,7 +1,7 @@
-import fs from "node:fs";
-import { cleanEnv, str } from "envalid";
-import { config } from "@dotenvx/dotenvx";
-import type { StoreConfig } from "../types";
+import fs from 'node:fs';
+import { config } from '@dotenvx/dotenvx';
+import { cleanEnv, str } from 'envalid';
+import type { StoreConfig } from '../types';
 
 export function loadEnvConfig(path?: string): void {
   let paths: string[];
@@ -15,14 +15,14 @@ export function loadEnvConfig(path?: string): void {
     paths = ['.env.local', '.env'];
   }
 
-  const existing = paths.filter(p => fs.existsSync(p));
+  const existing = paths.filter((p) => fs.existsSync(p));
 
   if (existing.length === 0) {
-    const sources = paths.map(p => `'${p}'`).join(' or ');
+    const sources = paths.map((p) => `'${p}'`).join(' or ');
     throw new Error(`environment file not found in ${sources}`);
   }
 
-  console.log(`  loading environment variables from ${existing.map(p => `'${p}'`).join(', ')}`);
+  console.log(`  loading environment variables from ${existing.map((p) => `'${p}'`).join(', ')}`);
 
   config({
     path: existing,

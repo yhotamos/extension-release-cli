@@ -1,11 +1,11 @@
-import type { Command } from "commander";
-import fs from "node:fs";
-import path from "node:path";
-import { getManifestData } from "../../utils/manifest";
-import { makeDirectoryIfNotExists, deleteFileIfExists } from "../../utils/fs";
-import archiver from "archiver";
-import { PassThrough, type Writable } from 'stream';
-import kleur from "kleur";
+import fs from 'node:fs';
+import path from 'node:path';
+import { PassThrough, type Writable } from 'node:stream';
+import archiver from 'archiver';
+import type { Command } from 'commander';
+import kleur from 'kleur';
+import { deleteFileIfExists, makeDirectoryIfNotExists } from '../../utils/fs';
+import { getManifestData } from '../../utils/manifest';
 
 const RELEASES_DIR = 'releases';
 
@@ -14,13 +14,16 @@ export type PackOptions = {
   releasesDir?: string;
   force?: boolean;
   dryRun?: boolean;
-}
+};
 
 export function packCommand(program: Command) {
   program
     .command('pack')
     .description('pack the extension source directory into a zip archive')
-    .argument('<source>', 'extension source directory with manifest.json to pack (e.g., dist/, my-extension/)')
+    .argument(
+      '<source>',
+      'extension source directory with manifest.json to pack (e.g., dist/, my-extension/)',
+    )
     .option('-n, --name <name>', 'base name to use for the zip file')
     .option('-r, --releases-dir <dir>', 'directory to save the zip file (default: releases/)')
     .option('-f, --force', 'overwrite existing zip file if it exists')
@@ -29,7 +32,9 @@ export function packCommand(program: Command) {
       try {
         await packExtension(source, options);
         if (options.dryRun) {
-          console.log(`\n  if the zip file name is not as expected, consider using the --name option to specify a custom base name for the zip file.`);
+          console.log(
+            `\n  if the zip file name is not as expected, consider using the --name option to specify a custom base name for the zip file.`,
+          );
         }
       } catch (error) {
         console.error(`error: ${error instanceof Error ? error.message : String(error)}\n`);
@@ -42,7 +47,11 @@ export function packCommand(program: Command) {
  * Packs the extension source directory into a zip archive.
  * Returns the absolute path to the created zip file, or null if the operation was not performed.
  */
-export async function packExtension(source: string, options: PackOptions = {}, header?: string): Promise<string | null> {
+export async function packExtension(
+  source: string,
+  options: PackOptions = {},
+  header?: string,
+): Promise<string | null> {
   if (!fs.existsSync(source)) {
     throw new Error(`source directory '${source}' does not exist`);
   }
@@ -51,15 +60,16 @@ export async function packExtension(source: string, options: PackOptions = {}, h
   const resolvedReleasesDir = path.resolve(options.releasesDir ?? RELEASES_DIR);
   if (resolvedSource === process.cwd()) {
     throw new Error(
-      "refusing to pack the current working directory '.'. specify a subdirectory to pack (e.g. dist/)."
+      "refusing to pack the current working directory '.'. specify a subdirectory to pack (e.g. dist/).",
     );
   }
 
   const relative = path.relative(resolvedSource, resolvedReleasesDir);
-  const isInsideSource = relative === "" || (!relative.startsWith("..") && !path.isAbsolute(relative));
+  const isInsideSource =
+    relative === '' || (!relative.startsWith('..') && !path.isAbsolute(relative));
   if (isInsideSource) {
     throw new Error(
-      `releases directory '${resolvedReleasesDir}' must not be the same as or inside the source directory '${resolvedSource}'.`
+      `releases directory '${resolvedReleasesDir}' must not be the same as or inside the source directory '${resolvedSource}'.`,
     );
   }
 
@@ -75,7 +85,9 @@ export async function packExtension(source: string, options: PackOptions = {}, h
   if (options.dryRun) {
     const passthrough = new PassThrough();
     let size = 0;
-    passthrough.on('data', (chunk: Buffer) => { size += chunk.length; });
+    passthrough.on('data', (chunk: Buffer) => {
+      size += chunk.length;
+    });
     await createZipArchive(source, zipFilePath, passthrough);
     console.log(`${kleur.green('✔')} pack completed`);
     console.log(`  would pack: ${zipFilePath}`);
@@ -90,7 +102,7 @@ export async function packExtension(source: string, options: PackOptions = {}, h
   } else if (fs.existsSync(zipFilePath)) {
     console.warn(
       `${kleur.yellow('⚠')} zip file already exists '${zipFilePath}'.\n ` +
-      ` use --force option to overwrite.`
+        ` use --force option to overwrite.`,
     );
     return null;
   }
@@ -103,9 +115,9 @@ export async function packExtension(source: string, options: PackOptions = {}, h
 }
 
 type PackZipFileName = {
-  identifier: string,
-  zipFileName: string,
-  manifestData: { name: string; version: string }
+  identifier: string;
+  zipFileName: string;
+  manifestData: { name: string; version: string };
 };
 
 export function resolvePackZipFileName(source: string, options: PackOptions = {}): PackZipFileName {
@@ -115,17 +127,17 @@ export function resolvePackZipFileName(source: string, options: PackOptions = {}
   const version = manifestData.version;
 
   if (options.name) {
-    if (!/^[a-zA-Z0-9\-]+$/.test(options.name)) {
+    if (!/^[a-zA-Z0-9-]+$/.test(options.name)) {
       throw new Error(
         `invalid --name value '${options.name}'. \n` +
-        `allowed characters: letters (A-Z,a-z), numbers (0-9), and hyphens (-). \n` +
-        `example: my-extension-1`
+          `allowed characters: letters (A-Z,a-z), numbers (0-9), and hyphens (-). \n` +
+          `example: my-extension-1`,
       );
     }
     return {
       identifier: generateIdentifier(options.name, version),
       zipFileName: generateZipFileName(options.name, version),
-      manifestData
+      manifestData,
     };
   }
 
@@ -137,19 +149,21 @@ export function resolvePackZipFileName(source: string, options: PackOptions = {}
         return {
           identifier: generateIdentifier(pkg.name, version),
           zipFileName: generateZipFileName(pkg.name, version),
-          manifestData
+          manifestData,
         };
       }
     }
-  } catch { /* ignore errors and fallback to other methods */ }
+  } catch {
+    /* ignore errors and fallback to other methods */
+  }
 
   if (projectName && projectName.length > 0) {
-    const sanitized = sanitizeName(projectName)
+    const sanitized = sanitizeName(projectName);
     if (sanitized && sanitized.length > 0) {
       return {
         identifier: generateIdentifier(sanitized, version),
         zipFileName: generateZipFileName(sanitized, version),
-        manifestData
+        manifestData,
       };
     }
   }
@@ -158,11 +172,15 @@ export function resolvePackZipFileName(source: string, options: PackOptions = {}
   return {
     identifier: generateIdentifier(sanitizedManifest, version),
     zipFileName: generateZipFileName(sanitizedManifest, version),
-    manifestData
+    manifestData,
   };
 }
 
-function createZipArchive(source: string, zipFilePath: string, outputStream?: Writable): Promise<number> {
+function createZipArchive(
+  source: string,
+  zipFilePath: string,
+  outputStream?: Writable,
+): Promise<number> {
   return new Promise<number>((resolve, reject) => {
     const output: Writable = outputStream ?? fs.createWriteStream(zipFilePath);
     const archive = archiver('zip', { zlib: { level: 9 } });
@@ -178,8 +196,8 @@ function createZipArchive(source: string, zipFilePath: string, outputStream?: Wr
         '**/.github/**',
         '**/node_modules/**',
         '**/dist/**',
-        '**/releases/**'
-      ]
+        '**/releases/**',
+      ],
     });
 
     const onClose = () => {
@@ -187,38 +205,41 @@ function createZipArchive(source: string, zipFilePath: string, outputStream?: Wr
         const size = archive.pointer();
         cleanup();
         resolve(size);
-      } catch (err) { cleanup(); reject(err) }
-    }
+      } catch (err) {
+        cleanup();
+        reject(err);
+      }
+    };
 
     const onError = (err: unknown) => {
-      cleanup()
-      const message = err instanceof Error ? err.message : String(err)
-      reject(new Error(`failed to create zip archive '${message}'`))
-    }
+      cleanup();
+      const message = err instanceof Error ? err.message : String(err);
+      reject(new Error(`failed to create zip archive '${message}'`));
+    };
 
     const onWarning = (err: unknown) => {
-      const maybe = err as { code?: string; message?: string } | null
+      const maybe = err as { code?: string; message?: string } | null;
       if (maybe && maybe.code === 'ENOENT') {
         console.warn(`warning: ${maybe.message}`);
       } else {
-        onError(err)
+        onError(err);
       }
-    }
+    };
 
     const cleanup = () => {
-      archive.removeAllListeners()
-      output.removeListener('close', onClose)
-      output.removeListener('error', onError)
-    }
+      archive.removeAllListeners();
+      output.removeListener('close', onClose);
+      output.removeListener('error', onError);
+    };
 
-    output.on('close', onClose)
-    output.on('error', onError)
-    archive.on('error', onError)
-    archive.on('warning', onWarning)
+    output.on('close', onClose);
+    output.on('error', onError);
+    archive.on('error', onError);
+    archive.on('warning', onWarning);
 
     archive.pipe(output);
     void archive.finalize();
-  })
+  });
 }
 
 function formatSize(sizeInBytes: number): string {
@@ -256,5 +277,5 @@ export function sanitizeName(name: string): string {
   return name
     .toLowerCase()
     .replace(/\s+/g, '-')
-    .replace(/[^a-z0-9\-]/g, '');
+    .replace(/[^a-z0-9-]/g, '');
 }

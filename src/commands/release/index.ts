@@ -1,14 +1,14 @@
-import path from 'node:path';
 import fs from 'node:fs';
+import path from 'node:path';
+import type { Command } from 'commander';
 import kleur from 'kleur';
-import type { Command } from "commander";
 import { loadEnv, loadEnvConfig } from '../../utils/env';
 import { getAccessToken } from '../../utils/oauth';
-import { packExtension } from '../pack';
 import type { PackOptions } from '../pack';
-import { uploadChromeWebStoreV2 } from '../upload';
-import { publishChromeWebStoreV2 } from '../publish';
+import { packExtension } from '../pack';
 import type { PublishOptions } from '../publish';
+import { publishChromeWebStoreV2 } from '../publish';
+import { uploadChromeWebStoreV2 } from '../upload';
 
 type ReleaseOptions = PackOptions & PublishOptions;
 
@@ -16,13 +16,20 @@ export function releaseCommand(program: Command) {
   program
     .command('release')
     .description('pack, upload, and publish the extension in one step')
-    .argument('<source>', 'extension source directory with manifest.json to pack (e.g., dist/, my-extension/)')
+    .argument(
+      '<source>',
+      'extension source directory with manifest.json to pack (e.g., dist/, my-extension/)',
+    )
     .option('-n, --name <name>', 'base name to use for the zip file')
     .option('-r, --releases-dir <dir>', 'directory to save the zip file (default: releases/)')
     .option('-f, --force', 'overwrite existing zip file if it exists')
     .option('--dry-run', 'perform a trial run with no changes made')
     .option('-e, --env <path>', 'custom path to .env file (e.g., --env .env.production)')
-    .option('--publish-type <type>', 'publish type (DEFAULT_PUBLISH or STAGED_PUBLISH)', 'DEFAULT_PUBLISH')
+    .option(
+      '--publish-type <type>',
+      'publish type (DEFAULT_PUBLISH or STAGED_PUBLISH)',
+      'DEFAULT_PUBLISH',
+    )
     .option('--deploy-percentage <number>', 'percentage of users to deploy to (0-100)', parseFloat)
     .option('--skip-review', 'skip the review process', false)
     .action(async (source: string, options: ReleaseOptions) => {
@@ -74,7 +81,8 @@ export function releaseCommand(program: Command) {
 
         console.log(`\n${kleur.green('✔')} release completed successfully!`);
       } catch (error) {
-        const msg = error instanceof Error ? error.message.replace(/^Error:\s*/, '') : String(error);
+        const msg =
+          error instanceof Error ? error.message.replace(/^Error:\s*/, '') : String(error);
         console.error(kleur.red(`✖ error: ${msg}`));
         process.exit(1);
       }
