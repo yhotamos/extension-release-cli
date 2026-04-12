@@ -1,8 +1,8 @@
-import kleur from "kleur";
-import type { Command } from "commander";
-import { loadEnv, loadEnvConfig } from "../../utils/env";
-import { getAccessToken } from "../../utils/oauth";
-import type { ItemState, StoreTarget, UploadState } from "../../types";
+import type { Command } from 'commander';
+import kleur from 'kleur';
+import type { ItemState, StoreTarget, UploadState } from '../../types';
+import { loadEnv, loadEnvConfig } from '../../utils/env';
+import { getAccessToken } from '../../utils/oauth';
 
 export type StatusOptions = {
   env?: string;
@@ -13,13 +13,13 @@ export type StatusOptions = {
 type DistributionChannel = {
   deployPercentage: number;
   crxVersion: string;
-}
+};
 
 // Details on the status of an item revision
 type ItemRevisionStatus = {
   state: ItemState;
   distributionChannels: DistributionChannel[];
-}
+};
 
 type StatusResponse = {
   name: string;
@@ -30,12 +30,14 @@ type StatusResponse = {
   lastAsyncUploadState: UploadState | undefined;
   takenDown: boolean;
   warned: boolean;
-}
+};
 
 export function statusCommand(program: Command) {
   program
     .command('status')
-    .description('check the status of the extension in the marketplace (e.g., pending publication, published, etc.)')
+    .description(
+      'check the status of the extension in the marketplace (e.g., pending publication, published, etc.)',
+    )
     .option('-e, --env <path>', 'custom path to .env file (e.g., --env .env.production)')
     .option('--show-full-public-key', 'show full public key in the output')
     .action(async (options: StatusOptions) => {
@@ -58,7 +60,8 @@ export function statusCommand(program: Command) {
 
         showStatus(data, options);
       } catch (error) {
-        const msg = error instanceof Error ? error.message.replace(/^Error:\s*/, '') : String(error);
+        const msg =
+          error instanceof Error ? error.message.replace(/^Error:\s*/, '') : String(error);
         console.error(kleur.red(`✖ error: ${msg}`));
         process.exit(1);
       }
@@ -79,10 +82,14 @@ async function fetchWebStoreStatus(target: StoreTarget, accessToken: string): Pr
 
 function showStatus(status: StatusResponse, options: StatusOptions): void {
   console.log(`  Extension ID: ${status.itemId}`);
-  console.log(`  Public Key: ${options.showFullPublicKey ? status.publicKey : shortenPublicKey(status.publicKey)}`);
+  console.log(
+    `  Public Key: ${options.showFullPublicKey ? status.publicKey : shortenPublicKey(status.publicKey)}`,
+  );
   console.log(`  Taken Down: ${status.takenDown ? 'Yes' : 'No'}`);
   console.log(`  Warned: ${status.warned ? 'Yes' : 'No'}`);
-  console.log(`  Last Async Upload State: ${status.lastAsyncUploadState || '(24h upload not found)'}`);
+  console.log(
+    `  Last Async Upload State: ${status.lastAsyncUploadState || '(24h upload not found)'}`,
+  );
 
   if (status.publishedItemRevisionStatus) {
     console.log(`  Published Revision State: ${status.publishedItemRevisionStatus.state}`);
@@ -110,11 +117,11 @@ function showStatus(status: StatusResponse, options: StatusOptions): void {
 function shortenPublicKey(key: string | undefined): string {
   if (!key) return '';
   key = key.trim();
-  const begin = "-----BEGIN PUBLIC KEY-----";
-  const end = "-----END PUBLIC KEY-----";
+  const begin = '-----BEGIN PUBLIC KEY-----';
+  const end = '-----END PUBLIC KEY-----';
 
   if (key.startsWith(begin) && key.endsWith(end)) {
-    const lines = key.split('\n').filter(line => line.trim() !== '');
+    const lines = key.split('\n').filter((line) => line.trim() !== '');
     if (lines.length >= 4) {
       const firstLine = lines[1].slice(0, 10);
       const lastLine = lines[lines.length - 2].slice(-10);

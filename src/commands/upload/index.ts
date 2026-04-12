@@ -1,17 +1,20 @@
-import fs from "node:fs";
-import path from "node:path";
-import type { Command } from "commander";
+import fs from 'node:fs';
+import path from 'node:path';
+import type { Command } from 'commander';
 import kleur from 'kleur';
-import { loadEnv, loadEnvConfig } from "../../utils/env";
-import { getAccessToken } from "../../utils/oauth";
-import { parseStoreError } from "../../utils/chrome-webstore";
-import type { StoreTarget, UploadResponse, UploadState } from "../../types";
+import type { StoreTarget, UploadResponse, UploadState } from '../../types';
+import { parseStoreError } from '../../utils/chrome-webstore';
+import { loadEnv, loadEnvConfig } from '../../utils/env';
+import { getAccessToken } from '../../utils/oauth';
 
 export function uploadCommand(program: Command) {
   program
     .command('upload')
     .description('upload the extension zip archive to the server')
-    .argument('<release-zip-path>', 'extension zip file to upload (e.g., releases/my-extension.zip)')
+    .argument(
+      '<release-zip-path>',
+      'extension zip file to upload (e.g., releases/my-extension.zip)',
+    )
     .option('-e, --env <path>', 'custom path to .env file (e.g., --env .env.production)')
     .action(async (releaseZipPath: string, options: { env?: string }) => {
       try {
@@ -35,7 +38,8 @@ export function uploadCommand(program: Command) {
         console.log(`  extension_id: ${result.itemId}`);
         console.log(`  version: ${result.crxVersion}`);
       } catch (error) {
-        const msg = error instanceof Error ? error.message.replace(/^Error:\s*/, '') : String(error);
+        const msg =
+          error instanceof Error ? error.message.replace(/^Error:\s*/, '') : String(error);
         console.error(kleur.red(`✖ error: ${msg}`));
         process.exit(1);
       }
@@ -45,7 +49,7 @@ export function uploadCommand(program: Command) {
 export async function uploadChromeWebStoreV2(
   zipFilePath: string,
   target: StoreTarget,
-  accessToken: string
+  accessToken: string,
 ): Promise<UploadResponse> {
   const zipBuffer = fs.readFileSync(zipFilePath);
 
@@ -72,11 +76,11 @@ export async function uploadChromeWebStoreV2(
       itemId: result.itemId as string,
       crxVersion: result.crxVersion as string,
       name: result.name as string,
-      uploadState: result.uploadState as UploadState
+      uploadState: result.uploadState as UploadState,
     } as UploadResponse;
   }
 
   throw new Error(
-    parseStoreError(result, `upload failed (HTTP ${response.status} ${response.statusText})`)
+    parseStoreError(result, `upload failed (HTTP ${response.status} ${response.statusText})`),
   );
 }

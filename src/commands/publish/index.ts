@@ -1,23 +1,27 @@
-import type { Command } from "commander";
+import type { Command } from 'commander';
 import kleur from 'kleur';
-import { loadEnv, loadEnvConfig } from "../../utils/env";
-import { getAccessToken } from "../../utils/oauth";
-import { parseStoreError } from "../../utils/chrome-webstore";
-import type { StoreTarget, PublishType, PublishResponse, PublishParams } from "../../types";
+import type { PublishParams, PublishResponse, PublishType, StoreTarget } from '../../types';
+import { parseStoreError } from '../../utils/chrome-webstore';
+import { loadEnv, loadEnvConfig } from '../../utils/env';
+import { getAccessToken } from '../../utils/oauth';
 
 export type PublishOptions = {
   env?: string;
   publishType?: PublishType;
   deployPercentage?: number;
   skipReview?: boolean;
-}
+};
 
 export function publishCommand(program: Command) {
   program
     .command('publish')
     .description('publish the extension to the marketplace')
     .option('-e, --env <path>', 'custom path to .env file (e.g., --env .env.production)')
-    .option('--publish-type <type>', 'publish type (DEFAULT_PUBLISH or STAGED_PUBLISH)', 'DEFAULT_PUBLISH')
+    .option(
+      '--publish-type <type>',
+      'publish type (DEFAULT_PUBLISH or STAGED_PUBLISH)',
+      'DEFAULT_PUBLISH',
+    )
     .option('--deploy-percentage <number>', 'percentage of users to deploy to (0-100)', parseFloat)
     .option('--skip-review', 'skip the review process', false)
     .action(async (options: PublishOptions) => {
@@ -41,7 +45,8 @@ export function publishCommand(program: Command) {
         console.log(`  itemId: ${result.itemId}`);
         console.log(`  state: ${result.state}`);
       } catch (error) {
-        const msg = error instanceof Error ? error.message.replace(/^Error:\s*/, '') : String(error);
+        const msg =
+          error instanceof Error ? error.message.replace(/^Error:\s*/, '') : String(error);
         console.error(kleur.red(`✖ error: ${msg}`));
         process.exit(1);
       }
@@ -51,7 +56,7 @@ export function publishCommand(program: Command) {
 export async function publishChromeWebStoreV2(
   target: StoreTarget,
   accessToken: string,
-  params: PublishParams = {}
+  params: PublishParams = {},
 ): Promise<PublishResponse> {
   const url = `https://chromewebstore.googleapis.com/v2/publishers/${target.publisherId}/items/${target.extensionId}:publish`;
 
@@ -69,7 +74,7 @@ export async function publishChromeWebStoreV2(
     result = await response.json();
   } catch {
     throw new Error(
-      `failed to publish the extension (HTTP ${response.status} ${response.statusText})`
+      `failed to publish the extension (HTTP ${response.status} ${response.statusText})`,
     );
   }
 
@@ -77,8 +82,8 @@ export async function publishChromeWebStoreV2(
     throw new Error(
       parseStoreError(
         result,
-        `failed to publish the extension (HTTP ${response.status} ${response.statusText})`
-      )
+        `failed to publish the extension (HTTP ${response.status} ${response.statusText})`,
+      ),
     );
   }
 
