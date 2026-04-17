@@ -1,6 +1,6 @@
 {
   "name": "@yhotamos/extension-release-cli",
-  "version": "0.2.3",
+  "version": "0.3.0",
   "description": "CLI tool to build, package, and publish Chrome extensions to the Chrome Web Store.",
   "type": "module",
   "bin": {
