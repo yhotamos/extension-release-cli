@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { Command } from 'commander';
+import { cancelCommand } from './commands/cancel';
 import { packCommand } from './commands/pack';
 import { publishCommand } from './commands/publish';
 import { releaseCommand } from './commands/release';
@@ -32,5 +33,7 @@ publishCommand(program);
 releaseCommand(program);
 // status: check the status of the extension in the marketplace (e.g., pending publication, published, etc.)
 statusCommand(program);
+// cancel: cancel a pending publication of the extension in the marketplace
+cancelCommand(program);
 
 program.parse();

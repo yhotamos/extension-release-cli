@@ -1,32 +1,22 @@
 import type { Command } from 'commander';
 import kleur from 'kleur';
-import type { PublishParams, PublishResponse, PublishType, StoreTarget } from '../../types';
+import type { StoreTarget } from '../../types';
 import { isErrorResponse, parseStoreError } from '../../utils/chrome-webstore';
 import { loadEnv, loadEnvConfig } from '../../utils/env';
 import { getAccessToken } from '../../utils/oauth';
 
-export type PublishOptions = {
+export type CancelOptions = {
   env?: string;
-  publishType?: PublishType;
-  deployPercentage?: number;
-  skipReview?: boolean;
 };
 
-export function publishCommand(program: Command) {
+export function cancelCommand(program: Command) {
   program
-    .command('publish')
-    .description('publish the extension to the marketplace')
+    .command('cancel')
+    .description('cancel the review of a pending extension request in the marketplace')
     .option('-e, --env <path>', 'custom path to .env file (e.g., --env .env.production)')
-    .option(
-      '--publish-type <type>',
-      'publish type (DEFAULT_PUBLISH or STAGED_PUBLISH)',
-      'DEFAULT_PUBLISH',
-    )
-    .option('--deploy-percentage <number>', 'percentage of users to deploy to (0-100)', parseFloat)
-    .option('--skip-review', 'skip the review process', false)
-    .action(async (options: PublishOptions) => {
+    .action(async (options: CancelOptions) => {
       try {
-        console.log(`--- publishing extension ---`);
+        console.log(`--- canceling pending extension request ---`);
 
         loadEnvConfig(options.env);
         const config = loadEnv();
@@ -35,15 +25,9 @@ export function publishCommand(program: Command) {
         const accessToken = await getAccessToken(config);
         console.log(`${kleur.green('✔')} obtained access token`);
 
-        console.log('  publishing the extension...');
-        const result = await publishChromeWebStoreV2(config, accessToken, {
-          publishType: options.publishType,
-          deployPercentage: options.deployPercentage,
-          skipReview: options.skipReview,
-        });
-        console.log(`${kleur.green('✔')} publish succeeded!`);
-        console.log(`  itemId: ${result.itemId}`);
-        console.log(`  state: ${result.state}`);
+        console.log('  canceling pending extension request...');
+        await cancelPendingExtensionRequest(config, accessToken);
+        console.log(`${kleur.green('✔')} cancellation succeeded!`);
       } catch (error) {
         const msg =
           error instanceof Error ? error.message.replace(/^Error:\s*/, '') : String(error);
@@ -53,12 +37,11 @@ export function publishCommand(program: Command) {
     });
 }
 
-export async function publishChromeWebStoreV2(
+export async function cancelPendingExtensionRequest(
   target: StoreTarget,
   accessToken: string,
-  params: PublishParams = {},
-): Promise<PublishResponse> {
-  const url = `https://chromewebstore.googleapis.com/v2/publishers/${target.publisherId}/items/${target.extensionId}:publish`;
+): Promise<void> {
+  const url = `https://chromewebstore.googleapis.com/v2/publishers/${target.publisherId}/items/${target.extensionId}:cancelSubmission`;
 
   const response = await fetch(url, {
     method: 'POST',
@@ -66,11 +49,10 @@ export async function publishChromeWebStoreV2(
       Authorization: `Bearer ${accessToken}`,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify(params),
   });
 
   if (response.ok) {
-    return response.json();
+    return;
   }
 
   const fallback = `failed to cancel pending extension request (HTTP ${response.status} ${response.statusText})`;

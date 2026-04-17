@@ -3,7 +3,7 @@ import path from 'node:path';
 import type { Command } from 'commander';
 import kleur from 'kleur';
 import type { StoreTarget, UploadResponse, UploadState } from '../../types';
-import { parseStoreError } from '../../utils/chrome-webstore';
+import { type ErrorResponse, parseStoreError } from '../../utils/chrome-webstore';
 import { loadEnv, loadEnvConfig } from '../../utils/env';
 import { getAccessToken } from '../../utils/oauth';
 
@@ -81,6 +81,9 @@ export async function uploadChromeWebStoreV2(
   }
 
   throw new Error(
-    parseStoreError(result, `upload failed (HTTP ${response.status} ${response.statusText})`),
+    parseStoreError(
+      result as ErrorResponse,
+      `upload failed (HTTP ${response.status} ${response.statusText})`,
+    ),
   );
 }
