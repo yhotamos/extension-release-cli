@@ -1,7 +1,7 @@
 import type { Command } from 'commander';
 import kleur from 'kleur';
 import type { PublishParams, PublishResponse, PublishType, StoreTarget } from '../../types';
-import { parseStoreError } from '../../utils/chrome-webstore';
+import { isErrorResponse, parseStoreError } from '../../utils/chrome-webstore';
 import { loadEnv, loadEnvConfig } from '../../utils/env';
 import { getAccessToken } from '../../utils/oauth';
 
@@ -69,23 +69,21 @@ export async function publishChromeWebStoreV2(
     body: JSON.stringify(params),
   });
 
-  let result: Record<string, unknown>;
+  if (response.ok) {
+    return response.json();
+  }
+
+  const fallback = `failed to cancel pending extension request (HTTP ${response.status} ${response.statusText})`;
+
   try {
-    result = await response.json();
-  } catch {
-    throw new Error(
-      `failed to publish the extension (HTTP ${response.status} ${response.statusText})`,
-    );
+    const result: unknown = await response.json();
+
+    if (isErrorResponse(result)) {
+      throw new Error(parseStoreError(result, fallback));
+    }
+  } catch (e) {
+    if (e instanceof Error) throw e;
   }
 
-  if (!response.ok) {
-    throw new Error(
-      parseStoreError(
-        result,
-        `failed to publish the extension (HTTP ${response.status} ${response.statusText})`,
-      ),
-    );
-  }
-
-  return result as PublishResponse;
+  throw new Error(fallback);
 }
