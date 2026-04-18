@@ -9,7 +9,11 @@
 A CLI tool to pack, upload, and publish Chrome extensions to the [Chrome Web Store](https://chromewebstore.google.com/) — all from your terminal.
 
 ```
+# Run (global install)
 exr release dist/
+
+# Or run with npx (local install)
+npx exr release dist/
 ```
 
 ## Features
@@ -30,7 +34,11 @@ exr release dist/
 ## Installation
 
 ```bash
+# Install globally
 npm install -g @yhotamos/extension-release-cli
+
+# Or install locally (dev dependency)
+npm install --save-dev @yhotamos/extension-release-cli
 ```
 
 ## Setup

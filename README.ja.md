@@ -10,7 +10,11 @@
 すべての作業が端末上で完結します．
 
 ```
+# グローバルインストールしている場合
 exr release dist/
+
+# またはローカル環境から実行する場合
+npx exr release dist/
 ```
 
 ## 特徴
@@ -31,7 +35,11 @@ exr release dist/
 ## インストール
 
 ```bash
+# グローバルインストール
 npm install -g @yhotamos/extension-release-cli
+
+# またはローカルにインストール（開発依存）
+npm install --save-dev @yhotamos/extension-release-cli
 ```
 
 ## 設定方法
