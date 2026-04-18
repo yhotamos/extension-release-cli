@@ -3,6 +3,21 @@ import { config } from '@dotenvx/dotenvx';
 import { cleanEnv, str } from 'envalid';
 import type { StoreConfig } from '../types';
 
+const REQUIRED_ENV_KEYS = [
+  'CLIENT_ID',
+  'CLIENT_SECRET',
+  'REFRESH_TOKEN',
+  'PUBLISHER_ID',
+  'EXTENSION_ID',
+] as const;
+
+function hasRequiredEnvVars(): boolean {
+  return REQUIRED_ENV_KEYS.every((key) => {
+    const value = process.env[key];
+    return typeof value === 'string' && value.length > 0;
+  });
+}
+
 export function loadEnvConfig(path?: string): void {
   let paths: string[];
 
@@ -18,6 +33,11 @@ export function loadEnvConfig(path?: string): void {
   const existing = paths.filter((p) => fs.existsSync(p));
 
   if (existing.length === 0) {
+    if (!path && hasRequiredEnvVars()) {
+      console.log('  using environment variables from process.env');
+      return;
+    }
+
     const sources = paths.map((p) => `'${p}'`).join(' or ');
     throw new Error(`environment file not found in ${sources}`);
   }
