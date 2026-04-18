@@ -22,7 +22,7 @@ describe('version command', () => {
     selectMock.mockReset();
   });
 
-  it('bumps patch version and syncs manifest/package versions', async () => {
+  it('shows current versions and does not bump when release argument is omitted', async () => {
     const workspace = fs.mkdtempSync(path.join(os.tmpdir(), 'exr-version-'));
     const manifestPath = path.join(workspace, 'manifest.json');
     const packagePath = path.join(workspace, 'package.json');
@@ -35,6 +35,30 @@ describe('version command', () => {
 
     await program.parseAsync(
       ['version', '--manifest', manifestPath, '--package-path', packagePath],
+      { from: 'user' },
+    );
+
+    const manifestResult = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
+    const packageResult = JSON.parse(fs.readFileSync(packagePath, 'utf-8'));
+
+    expect(manifestResult.version).toBe('1.2.3');
+    expect(packageResult.version).toBe('1.2.3');
+    expect(selectMock).not.toHaveBeenCalled();
+  });
+
+  it('bumps patch version when patch is specified explicitly', async () => {
+    const workspace = fs.mkdtempSync(path.join(os.tmpdir(), 'exr-version-'));
+    const manifestPath = path.join(workspace, 'manifest.json');
+    const packagePath = path.join(workspace, 'package.json');
+
+    fs.writeFileSync(manifestPath, JSON.stringify({ version: '1.2.3', name: 'sample' }, null, 2));
+    fs.writeFileSync(packagePath, JSON.stringify({ version: '1.2.3', name: 'pkg' }, null, 2));
+
+    const program = new Command();
+    versionCommand(program);
+
+    await program.parseAsync(
+      ['version', 'patch', '--manifest', manifestPath, '--package-path', packagePath],
       { from: 'user' },
     );
 

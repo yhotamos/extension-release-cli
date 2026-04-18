@@ -32,7 +32,7 @@ export function versionCommand(program: Command) {
     .option('--tag <identifier>', 'prerelease tag identifier (e.g., beta)')
     .option('--preid <identifier>', 'alias of --tag')
     .action(async (release: string | undefined, options: VersionOptions) => {
-      console.log('--- bumping extension version ---');
+      console.log('--- extension version ---');
 
       const manifestPath = options.manifest;
       const packagePath = options.packagePath;
@@ -42,7 +42,12 @@ export function versionCommand(program: Command) {
         const packageSource = existsSync(packagePath)
           ? readVersionSource(packagePath, 'package.json')
           : null;
-        const tag = resolveTag(options.tag, options.preid);
+        const tag = resolveTag(options.tag, options.preid, release);
+
+        if (!release) {
+          printCurrentVersions(manifestSource, packageSource, packagePath);
+          return;
+        }
 
         const baseVersion = await resolveBaseVersion(manifestSource, packageSource);
         const targetVersion = resolveTargetVersion(release, baseVersion, tag);
@@ -69,6 +74,24 @@ export function versionCommand(program: Command) {
         process.exit(1);
       }
     });
+}
+
+function printCurrentVersions(
+  manifestSource: VersionSource,
+  packageSource: VersionSource | null,
+  packagePath: string,
+): void {
+  console.log(`manifest version: ${manifestSource.version} (${manifestSource.filePath})`);
+  if (packageSource) {
+    console.log(`package.json version: ${packageSource.version} (${packageSource.filePath})`);
+    if (manifestSource.version === packageSource.version) {
+      console.log(kleur.green(`synchronized version: ${manifestSource.version}`));
+    } else {
+      console.log(kleur.yellow('manifest and package.json versions are different'));
+    }
+    return;
+  }
+  console.log(kleur.yellow(`package.json was not found at ${packagePath}`));
 }
 
 function readVersionSource(filePath: string, label: 'manifest' | 'package.json'): VersionSource {
@@ -165,11 +188,18 @@ function resolveTargetVersion(
   return release;
 }
 
-function resolveTag(tag: string | undefined, preid: string | undefined): string | undefined {
+function resolveTag(
+  tag: string | undefined,
+  preid: string | undefined,
+  release: string | undefined,
+): string | undefined {
   if (tag && preid && tag !== preid) {
     throw new Error(
       `--tag and --preid must match when both are specified (got '${tag}' and '${preid}')`,
     );
+  }
+  if (!release && (tag || preid)) {
+    throw new Error('--tag/--preid requires a release type argument');
   }
   return tag ?? preid;
 }
