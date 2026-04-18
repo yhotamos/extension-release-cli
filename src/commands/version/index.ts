@@ -1,4 +1,5 @@
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { dirname, isAbsolute, join } from 'node:path';
 import { select } from '@inquirer/prompts';
 import type { Command } from 'commander';
 import kleur from 'kleur';
@@ -14,10 +15,11 @@ type VersionOptions = {
 
 type VersionSource = {
   filePath: string;
-  label: 'manifest' | 'package.json';
   data: Record<string, unknown>;
   version: string;
 };
+
+type PackageLockStatus = 'updated' | 'not-found' | 'skipped';
 
 export function versionCommand(program: Command) {
   program
@@ -38,10 +40,8 @@ export function versionCommand(program: Command) {
       const packagePath = options.packagePath;
 
       try {
-        const manifestSource = readVersionSource(manifestPath, 'manifest');
-        const packageSource = existsSync(packagePath)
-          ? readVersionSource(packagePath, 'package.json')
-          : null;
+        const manifestSource = readVersionSource(manifestPath);
+        const packageSource = existsSync(packagePath) ? readVersionSource(packagePath) : null;
         const tag = resolveTag(options.tag, options.preid, release);
 
         if (!release) {
@@ -52,14 +52,23 @@ export function versionCommand(program: Command) {
         const baseVersion = await resolveBaseVersion(manifestSource, packageSource);
         const targetVersion = resolveTargetVersion(release, baseVersion, tag);
 
-        updateSourceVersion(manifestSource, targetVersion);
-        writeVersionSource(manifestSource);
-        console.log(`${manifestSource.filePath} version updated to ${targetVersion}`);
+        applyVersionToSource(manifestSource, targetVersion);
 
         if (packageSource) {
-          updateSourceVersion(packageSource, targetVersion);
-          writeVersionSource(packageSource);
-          console.log(`${packageSource.filePath} version updated to ${targetVersion}`);
+          applyVersionToSource(packageSource, targetVersion);
+          const lockFileStatus: PackageLockStatus = updatePackageLockVersion(
+            packageSource.filePath,
+            targetVersion,
+          );
+          if (lockFileStatus === 'updated') {
+            console.log(
+              `${formatPathForLog(getPackageLockPath(packageSource.filePath))} version updated to ${targetVersion}`,
+            );
+          } else if (lockFileStatus === 'not-found') {
+            console.log(
+              kleur.yellow(`package-lock.json was not found next to ${packageSource.filePath}`),
+            );
+          }
         } else {
           console.log(
             kleur.yellow(
@@ -94,7 +103,7 @@ function printCurrentVersions(
   console.log(kleur.yellow(`package.json was not found at ${packagePath}`));
 }
 
-function readVersionSource(filePath: string, label: 'manifest' | 'package.json'): VersionSource {
+function readVersionSource(filePath: string): VersionSource {
   const raw = readFileSync(filePath, 'utf-8');
   const parsed = JSON.parse(raw);
 
@@ -110,19 +119,76 @@ function readVersionSource(filePath: string, label: 'manifest' | 'package.json')
 
   return {
     filePath,
-    label,
     data: parsed,
     version: parsed.version,
   };
 }
 
-function writeVersionSource(source: VersionSource): void {
-  writeFileSync(source.filePath, `${JSON.stringify(source.data, null, 2)}\n`, 'utf-8');
-}
-
-function updateSourceVersion(source: VersionSource, targetVersion: string): void {
+function applyVersionToSource(source: VersionSource, targetVersion: string): void {
   source.data.version = targetVersion;
   source.version = targetVersion;
+  writeFileSync(source.filePath, `${JSON.stringify(source.data, null, 2)}\n`, 'utf-8');
+  console.log(`${source.filePath} version updated to ${targetVersion}`);
+}
+
+function getPackageLockPath(packagePath: string): string {
+  return join(dirname(packagePath), 'package-lock.json');
+}
+
+function formatPathForLog(filePath: string): string {
+  if (isAbsolute(filePath) || filePath.startsWith('./') || filePath.startsWith('../')) {
+    return filePath;
+  }
+  return `./${filePath}`;
+}
+
+function updatePackageLockVersion(packagePath: string, targetVersion: string): PackageLockStatus {
+  const lockPath = getPackageLockPath(packagePath);
+  if (!existsSync(lockPath)) {
+    return 'not-found';
+  }
+
+  const raw = readFileSync(lockPath, 'utf-8');
+  const parsed = JSON.parse(raw);
+  if (!isRecord(parsed)) {
+    return 'skipped';
+  }
+
+  const rootChanged = setVersionIfString(parsed, targetVersion);
+  const packageChanged = updateRootPackageLockVersion(parsed, targetVersion);
+  const changed = rootChanged || packageChanged;
+
+  if (!changed) {
+    return 'skipped';
+  }
+
+  writeFileSync(lockPath, `${JSON.stringify(parsed, null, 2)}\n`, 'utf-8');
+  return 'updated';
+}
+
+function setVersionIfString(target: Record<string, unknown>, targetVersion: string): boolean {
+  if (typeof target.version !== 'string') {
+    return false;
+  }
+  target.version = targetVersion;
+  return true;
+}
+
+function updateRootPackageLockVersion(
+  lockJson: Record<string, unknown>,
+  targetVersion: string,
+): boolean {
+  const packagesField = lockJson.packages;
+  if (!isRecord(packagesField)) {
+    return false;
+  }
+
+  const rootPackage = packagesField[''];
+  if (!isRecord(rootPackage)) {
+    return false;
+  }
+
+  return setVersionIfString(rootPackage, targetVersion);
 }
 
 async function resolveBaseVersion(
@@ -151,23 +217,18 @@ async function resolveBaseVersion(
     ],
   });
 
-  if (choice === 'manifest') {
-    return manifestSource.version;
-  }
-  if (choice === 'package') {
-    return packageSource.version;
+  if (choice === 'cancel') {
+    throw new Error('version update cancelled by user');
   }
 
-  throw new Error('version update cancelled by user');
+  return choice === 'manifest' ? manifestSource.version : packageSource.version;
 }
 
 function resolveTargetVersion(
-  releaseArg: string | undefined,
+  release: string,
   currentVersion: string,
   tag: string | undefined,
 ): string {
-  const release = releaseArg ?? 'patch';
-
   if (isReleaseType(release)) {
     const incremented = tag ? inc(currentVersion, release, tag) : inc(currentVersion, release);
     if (!incremented) {

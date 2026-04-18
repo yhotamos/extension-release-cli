@@ -69,6 +69,89 @@ describe('version command', () => {
     expect(packageResult.version).toBe('1.2.4');
   });
 
+  it('updates package-lock.json when package.json is updated', async () => {
+    const workspace = fs.mkdtempSync(path.join(os.tmpdir(), 'exr-version-'));
+    const manifestPath = path.join(workspace, 'manifest.json');
+    const packagePath = path.join(workspace, 'package.json');
+    const packageLockPath = path.join(workspace, 'package-lock.json');
+
+    fs.writeFileSync(manifestPath, JSON.stringify({ version: '1.2.3', name: 'sample' }, null, 2));
+    fs.writeFileSync(packagePath, JSON.stringify({ version: '1.2.3', name: 'pkg' }, null, 2));
+    fs.writeFileSync(
+      packageLockPath,
+      JSON.stringify(
+        {
+          name: 'pkg',
+          version: '1.2.3',
+          lockfileVersion: 3,
+          packages: {
+            '': {
+              name: 'pkg',
+              version: '1.2.3',
+            },
+          },
+        },
+        null,
+        2,
+      ),
+    );
+
+    const program = new Command();
+    versionCommand(program);
+
+    await program.parseAsync(
+      ['version', 'patch', '--manifest', manifestPath, '--package-path', packagePath],
+      { from: 'user' },
+    );
+
+    const lockResult = JSON.parse(fs.readFileSync(packageLockPath, 'utf-8'));
+    expect(lockResult.version).toBe('1.2.4');
+    expect(lockResult.packages[''].version).toBe('1.2.4');
+  });
+
+  it('logs package-lock path with ./ prefix for relative package path', async () => {
+    const workspace = fs.mkdtempSync(path.join(os.tmpdir(), 'exr-version-'));
+    const originalCwd = process.cwd();
+    const manifestPath = path.join(workspace, 'manifest.json');
+    const packagePath = path.join(workspace, 'package.json');
+    const packageLockPath = path.join(workspace, 'package-lock.json');
+
+    fs.writeFileSync(manifestPath, JSON.stringify({ version: '1.2.3', name: 'sample' }, null, 2));
+    fs.writeFileSync(packagePath, JSON.stringify({ version: '1.2.3', name: 'pkg' }, null, 2));
+    fs.writeFileSync(
+      packageLockPath,
+      JSON.stringify(
+        {
+          name: 'pkg',
+          version: '1.2.3',
+          lockfileVersion: 3,
+          packages: {
+            '': {
+              name: 'pkg',
+              version: '1.2.3',
+            },
+          },
+        },
+        null,
+        2,
+      ),
+    );
+
+    const program = new Command();
+    versionCommand(program);
+
+    process.chdir(workspace);
+    try {
+      await program.parseAsync(['version', 'patch', '--manifest', './manifest.json'], {
+        from: 'user',
+      });
+
+      expect(console.log).toHaveBeenCalledWith('./package-lock.json version updated to 1.2.4');
+    } finally {
+      process.chdir(originalCwd);
+    }
+  });
+
   it('asks which version to use when manifest and package versions differ', async () => {
     const workspace = fs.mkdtempSync(path.join(os.tmpdir(), 'exr-version-'));
     const manifestPath = path.join(workspace, 'manifest.json');
