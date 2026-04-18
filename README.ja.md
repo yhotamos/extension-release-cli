@@ -1,9 +1,13 @@
 # Extension Release CLI
 
+![NPM Version](https://img.shields.io/npm/v/%40yhotamos%2Fextension-release-cli)
+![NPM Downloads](https://img.shields.io/npm/dm/%40yhotamos%2Fextension-release-cli)
+![NPM License](https://img.shields.io/npm/l/%40yhotamos%2Fextension-release-cli)
+
 [English](README.md) | [日本語](README.ja.md)
 
-ターミナルからChrome拡張機能をパックし，アップロードして公開するためのCLIツールです．  
-すべてが端末上で完結します．
+ターミナルからChrome拡張機能をパッケージ化し，アップロードして公開まで行えるCLIツールです．  
+すべての作業が端末上で完結します．
 
 ```
 exr release dist/
@@ -16,6 +20,8 @@ exr release dist/
 - `publish` — アップロードした拡張機能を公開（段階的ローリングアウト対応）
 - `release` — pack → upload → publish を一括実行
 - `status` — ストア上の拡張機能のライブステータスを確認
+- `cancel` — 審査待ちの拡張機能申請の審査をキャンセルする
+- `version` - manifest.json と package.json の拡張機能バージョンを同期して更新
 - env ファイルの読み込みを内包 — [dotenvx](https://github.com/dotenvx/dotenvx) を内包（別途インストール不要）
 
 ## 要件

@@ -1,5 +1,9 @@
 # Extension Release CLI
 
+![NPM Version](https://img.shields.io/npm/v/%40yhotamos%2Fextension-release-cli)
+![NPM Downloads](https://img.shields.io/npm/dm/%40yhotamos%2Fextension-release-cli)
+![NPM License](https://img.shields.io/npm/l/%40yhotamos%2Fextension-release-cli)
+
 [English](README.md) | [日本語](README.ja.md)
 
 A CLI tool to pack, upload, and publish Chrome extensions to the [Chrome Web Store](https://chromewebstore.google.com/) — all from your terminal.
@@ -15,6 +19,8 @@ exr release dist/
 - `publish` — Publish the uploaded extension (supports staged rollout)
 - `release` — Run pack → upload → publish in a single command
 - `status` — Inspect the live status of your extension on the store
+- `cancel` — Cancel the review of a pending extension submission in the marketplace.
+- `version` - Synchronize and bump extension version in manifest.json and package.json
 - Built-in env file support — powered by [dotenvx](https://github.com/dotenvx/dotenvx) (bundled, no separate install needed)
 
 ## Requirements
