@@ -6,6 +6,7 @@ import { publishCommand } from './commands/publish';
 import { releaseCommand } from './commands/release';
 import { statusCommand } from './commands/status';
 import { uploadCommand } from './commands/upload';
+import { versionCommand } from './commands/version';
 
 const pkgJson = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf-8'));
 const version = pkgJson.version;
@@ -35,5 +36,7 @@ releaseCommand(program);
 statusCommand(program);
 // cancel: cancel a pending publication of the extension in the marketplace
 cancelCommand(program);
+// version: synchronize and bump extension version in manifest.json and package.json
+versionCommand(program);
 
 program.parse();
