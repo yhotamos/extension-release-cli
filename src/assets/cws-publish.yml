@@ -41,8 +41,7 @@ jobs:
         run: npm run build
 
       - name: Publish to Chrome Web Store
-        run: |
-          npm run release
+        run: npx exr release dist/ --force
         env:
           CLIENT_ID: ${{ secrets.CLIENT_ID }}
           CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
