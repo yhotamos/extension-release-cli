@@ -7,8 +7,8 @@ import type { ReleaseType } from 'semver';
 import { inc, valid } from 'semver';
 
 type VersionOptions = {
-  manifest: string;
-  packagePath: string;
+  manifest: string[];
+  package: string[];
   tag?: string;
   preid?: string;
 };
@@ -19,8 +19,6 @@ type VersionSource = {
   version: string;
 };
 
-type PackageLockStatus = 'updated' | 'not-found' | 'skipped';
-
 export function versionCommand(program: Command) {
   program
     .command('version')
@@ -29,52 +27,33 @@ export function versionCommand(program: Command) {
       '[release]',
       'new version or release type: major|minor|patch|premajor|preminor|prepatch|prerelease',
     )
-    .option('--manifest <path>', 'custom path to manifest.json', './dist/manifest.json')
-    .option('--package-path <path>', 'custom path to package.json', './package.json')
+    .option('--manifest <paths...>', 'paths to manifest.json files', ['./dist/manifest.json'])
+    .option('--package <paths...>', 'paths to package.json files', ['./package.json'])
     .option('--tag <identifier>', 'prerelease tag identifier (e.g., beta)')
     .option('--preid <identifier>', 'alias of --tag')
     .action(async (release: string | undefined, options: VersionOptions) => {
       console.log('--- extension version ---');
 
-      const manifestPath = options.manifest;
-      const packagePath = options.packagePath;
-
       try {
-        const manifestSource = readVersionSource(manifestPath);
-        const packageSource = existsSync(packagePath) ? readVersionSource(packagePath) : null;
+        const manifestSources = options.manifest.map(readVersionSource);
+        const packageSources = options.package.filter(existsSync).map(readVersionSource);
         const tag = resolveTag(options.tag, options.preid, release);
 
         if (!release) {
-          printCurrentVersions(manifestSource, packageSource, packagePath);
+          printCurrentVersions(manifestSources, packageSources);
           return;
         }
 
-        const baseVersion = await resolveBaseVersion(manifestSource, packageSource);
+        const baseVersion = await resolveBaseVersion(manifestSources, packageSources);
         const targetVersion = resolveTargetVersion(release, baseVersion, tag);
 
-        applyVersionToSource(manifestSource, targetVersion);
+        for (const source of manifestSources) {
+          applyVersionToSource(source, targetVersion);
+        }
 
-        if (packageSource) {
-          applyVersionToSource(packageSource, targetVersion);
-          const lockFileStatus: PackageLockStatus = updatePackageLockVersion(
-            packageSource.filePath,
-            targetVersion,
-          );
-          if (lockFileStatus === 'updated') {
-            console.log(
-              `${formatPathForLog(getPackageLockPath(packageSource.filePath))} version updated to ${targetVersion}`,
-            );
-          } else if (lockFileStatus === 'not-found') {
-            console.log(
-              kleur.yellow(`package-lock.json was not found next to ${packageSource.filePath}`),
-            );
-          }
-        } else {
-          console.log(
-            kleur.yellow(
-              `package.json was not found at ${packagePath}. manifest only was updated.`,
-            ),
-          );
+        for (const source of packageSources) {
+          applyVersionToSource(source, targetVersion);
+          updatePackageLockVersion(source.filePath, targetVersion);
         }
       } catch (error) {
         const msg =
@@ -86,21 +65,23 @@ export function versionCommand(program: Command) {
 }
 
 function printCurrentVersions(
-  manifestSource: VersionSource,
-  packageSource: VersionSource | null,
-  packagePath: string,
+  manifestSources: VersionSource[],
+  packageSources: VersionSource[],
 ): void {
-  console.log(`manifest version: ${manifestSource.version} (${manifestSource.filePath})`);
-  if (packageSource) {
-    console.log(`package.json version: ${packageSource.version} (${packageSource.filePath})`);
-    if (manifestSource.version === packageSource.version) {
-      console.log(kleur.green(`synchronized version: ${manifestSource.version}`));
-    } else {
-      console.log(kleur.yellow('manifest and package.json versions are different'));
-    }
-    return;
+  for (const source of manifestSources) {
+    console.log(`manifest version: ${source.version} (${source.filePath})`);
   }
-  console.log(kleur.yellow(`package.json was not found at ${packagePath}`));
+  for (const source of packageSources) {
+    console.log(`package.json version: ${source.version} (${source.filePath})`);
+  }
+
+  const allSources = [...manifestSources, ...packageSources];
+  const uniqueVersions = new Set(allSources.map((s) => s.version));
+  if (uniqueVersions.size === 1) {
+    console.log(kleur.green(`synchronized version: ${[...uniqueVersions][0]}`));
+  } else {
+    console.log(kleur.yellow('versions are not synchronized'));
+  }
 }
 
 function readVersionSource(filePath: string): VersionSource {
@@ -142,28 +123,28 @@ function formatPathForLog(filePath: string): string {
   return `./${filePath}`;
 }
 
-function updatePackageLockVersion(packagePath: string, targetVersion: string): PackageLockStatus {
+function updatePackageLockVersion(packagePath: string, targetVersion: string): void {
   const lockPath = getPackageLockPath(packagePath);
   if (!existsSync(lockPath)) {
-    return 'not-found';
+    console.log(kleur.yellow(`package-lock.json was not found next to ${packagePath}`));
+    return;
   }
 
   const raw = readFileSync(lockPath, 'utf-8');
   const parsed = JSON.parse(raw);
   if (!isRecord(parsed)) {
-    return 'skipped';
+    return;
   }
 
   const rootChanged = setVersionIfString(parsed, targetVersion);
   const packageChanged = updateRootPackageLockVersion(parsed, targetVersion);
-  const changed = rootChanged || packageChanged;
 
-  if (!changed) {
-    return 'skipped';
+  if (!rootChanged && !packageChanged) {
+    return;
   }
 
   writeFileSync(lockPath, `${JSON.stringify(parsed, null, 2)}\n`, 'utf-8');
-  return 'updated';
+  console.log(`${formatPathForLog(lockPath)} version updated to ${targetVersion}`);
 }
 
 function setVersionIfString(target: Record<string, unknown>, targetVersion: string): boolean {
@@ -192,28 +173,27 @@ function updateRootPackageLockVersion(
 }
 
 async function resolveBaseVersion(
-  manifestSource: VersionSource,
-  packageSource: VersionSource | null,
+  manifestSources: VersionSource[],
+  packageSources: VersionSource[],
 ): Promise<string> {
-  if (!packageSource || manifestSource.version === packageSource.version) {
-    return manifestSource.version;
+  const allSources = [...manifestSources, ...packageSources];
+  const uniqueVersions = [...new Set(allSources.map((s) => s.version))];
+
+  if (uniqueVersions.length === 1) {
+    return uniqueVersions[0];
   }
 
   const choice = await select({
-    message: `manifest (${manifestSource.version}) and package.json (${packageSource.version}) are different. choose a base version:`,
+    message: 'versions differ across files. choose a base version:',
     choices: [
-      {
-        name: `Use manifest version (${manifestSource.version})`,
-        value: 'manifest',
-      },
-      {
-        name: `Use package.json version (${packageSource.version})`,
-        value: 'package',
-      },
-      {
-        name: 'Cancel',
-        value: 'cancel',
-      },
+      ...uniqueVersions.map((v) => {
+        const files = allSources
+          .filter((s) => s.version === v)
+          .map((s) => s.filePath)
+          .join(', ');
+        return { name: `${v} (${files})`, value: v };
+      }),
+      { name: 'Cancel', value: 'cancel' },
     ],
   });
 
@@ -221,7 +201,7 @@ async function resolveBaseVersion(
     throw new Error('version update cancelled by user');
   }
 
-  return choice === 'manifest' ? manifestSource.version : packageSource.version;
+  return choice;
 }
 
 function resolveTargetVersion(
