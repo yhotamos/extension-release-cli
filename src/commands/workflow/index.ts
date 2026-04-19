@@ -28,7 +28,7 @@ const platformMap: Record<Platform, string> = {
 const marketplaceObj: Record<Marketplace, { name: string; template: string }> = {
   'chrome-web-store': {
     name: 'Chrome Web Store',
-    template: 'cws-publish.yml',
+    template: 'chrome-publish.yml',
   },
 };
 
