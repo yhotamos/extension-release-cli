@@ -7,6 +7,7 @@ import { releaseCommand } from './commands/release';
 import { statusCommand } from './commands/status';
 import { uploadCommand } from './commands/upload';
 import { versionCommand } from './commands/version';
+import { workflowCommand } from './commands/workflow';
 
 const pkgJson = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf-8'));
 const version = pkgJson.version;
@@ -38,5 +39,7 @@ statusCommand(program);
 cancelCommand(program);
 // version: synchronize and bump extension version in manifest.json and package.json
 versionCommand(program);
+// workflow: generate GitHub Actions workflow file for extension release automation
+workflowCommand(program);
 
 program.parse();
