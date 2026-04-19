@@ -132,7 +132,29 @@ describe('version command', () => {
     expect(console.log).toHaveBeenCalledWith('./package-lock.json version updated to 1.2.4');
   });
 
-  it('asks which version to use when versions differ across files', async () => {
+  it('uses lowest version automatically when versions differ (default, no --interactive)', async () => {
+    fs.writeFileSync(
+      './manifest.json',
+      JSON.stringify({ version: '2.0.0', name: 'sample' }, null, 2),
+    );
+    fs.writeFileSync('./package.json', JSON.stringify({ version: '1.4.0', name: 'pkg' }, null, 2));
+
+    const program = new Command();
+    versionCommand(program);
+
+    await program.parseAsync(['version', 'minor', '--manifest', './manifest.json'], {
+      from: 'user',
+    });
+
+    const manifestResult = JSON.parse(fs.readFileSync('./manifest.json', 'utf-8'));
+    const packageResult = JSON.parse(fs.readFileSync('./package.json', 'utf-8'));
+
+    expect(selectMock).not.toHaveBeenCalled();
+    expect(manifestResult.version).toBe('1.5.0');
+    expect(packageResult.version).toBe('1.5.0');
+  });
+
+  it('asks which version to use when versions differ across files with --interactive', async () => {
     fs.writeFileSync(
       './manifest.json',
       JSON.stringify({ version: '2.0.0', name: 'sample' }, null, 2),
@@ -144,9 +166,10 @@ describe('version command', () => {
     const program = new Command();
     versionCommand(program);
 
-    await program.parseAsync(['version', 'minor', '--manifest', './manifest.json'], {
-      from: 'user',
-    });
+    await program.parseAsync(
+      ['version', 'minor', '--manifest', './manifest.json', '--interactive'],
+      { from: 'user' },
+    );
 
     const manifestResult = JSON.parse(fs.readFileSync('./manifest.json', 'utf-8'));
     const packageResult = JSON.parse(fs.readFileSync('./package.json', 'utf-8'));

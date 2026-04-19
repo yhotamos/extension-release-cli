@@ -4,13 +4,14 @@ import { select } from '@inquirer/prompts';
 import type { Command } from 'commander';
 import kleur from 'kleur';
 import type { ReleaseType } from 'semver';
-import { inc, valid } from 'semver';
+import { inc, sort as semverSort, valid } from 'semver';
 
 type VersionOptions = {
   manifest: string[];
   package: string[];
   tag?: string;
   preid?: string;
+  interactive: boolean;
 };
 
 type VersionSource = {
@@ -31,6 +32,7 @@ export function versionCommand(program: Command) {
     .option('--package <paths...>', 'paths to package.json files', ['./package.json'])
     .option('--tag <identifier>', 'prerelease tag identifier (e.g., beta)')
     .option('--preid <identifier>', 'alias of --tag')
+    .option('--interactive', 'interactively select base version when versions differ', false)
     .action(async (release: string | undefined, options: VersionOptions) => {
       console.log('--- extension version ---');
 
@@ -44,7 +46,11 @@ export function versionCommand(program: Command) {
           return;
         }
 
-        const baseVersion = await resolveBaseVersion(manifestSources, packageSources);
+        const baseVersion = await resolveBaseVersion(
+          manifestSources,
+          packageSources,
+          options.interactive,
+        );
         const targetVersion = resolveTargetVersion(release, baseVersion, tag);
 
         for (const source of manifestSources) {
@@ -175,12 +181,19 @@ function updateRootPackageLockVersion(
 async function resolveBaseVersion(
   manifestSources: VersionSource[],
   packageSources: VersionSource[],
+  interactive: boolean,
 ): Promise<string> {
   const allSources = [...manifestSources, ...packageSources];
   const uniqueVersions = [...new Set(allSources.map((s) => s.version))];
 
   if (uniqueVersions.length === 1) {
     return uniqueVersions[0];
+  }
+
+  if (!interactive) {
+    const min = semverSort(uniqueVersions)[0];
+    console.log(kleur.yellow(`versions differ across files. using lowest: ${min}`));
+    return min;
   }
 
   const choice = await select({
