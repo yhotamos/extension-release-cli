@@ -24,7 +24,8 @@ npx exr release dist/
 - `release` — Run pack → upload → publish in a single command
 - `status` — Inspect the live status of your extension on the store
 - `cancel` — Cancel the review of a pending extension submission in the marketplace.
-- `version` - Synchronize and bump extension version in manifest.json and package.json
+- `version` — Synchronize and bump extension version in manifest.json and package.json
+- `workflow` — Run a custom workflow defined in a YAML file (e.g., for CI/CD pipelines)
 - Built-in env file support — powered by [dotenvx](https://github.com/dotenvx/dotenvx) (bundled, no separate install needed)
 
 ## Requirements
