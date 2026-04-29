@@ -25,7 +25,8 @@ npx exr release dist/
 - `release` — pack → upload → publish を一括実行
 - `status` — ストア上の拡張機能のライブステータスを確認
 - `cancel` — 審査待ちの拡張機能申請の審査をキャンセルする
-- `version` - manifest.json と package.json の拡張機能バージョンを同期して更新
+- `version` — manifest.json と package.json の拡張機能バージョンを同期して更新
+- `workflow` — YAML ファイルで定義されたカスタムワークフローを実行（例: CI/CD パイプライン向け）
 - env ファイルの読み込みを内包 — [dotenvx](https://github.com/dotenvx/dotenvx) を内包（別途インストール不要）
 
 ## 要件
